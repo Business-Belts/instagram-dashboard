@@ -1,0 +1,1276 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BB Instagram Dashboard</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+    /* ── PASSWORD SCREEN ── */
+    #passwordScreen {
+      position: fixed;
+      inset: 0;
+      background: #091B20;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+    }
+    #passwordScreen.hidden { display: none; }
+    .pw-box {
+      text-align: center;
+      width: 320px;
+    }
+    .pw-logo {
+      font-size: 26px;
+      font-weight: 700;
+      color: #BBFFB6;
+      margin-bottom: 8px;
+      letter-spacing: -0.5px;
+    }
+    .pw-logo span { color: #F1F0EC; }
+    .pw-sub {
+      font-size: 13px;
+      color: #7a8a8e;
+      margin-bottom: 32px;
+    }
+    .pw-input {
+      width: 100%;
+      background: #0d2329;
+      border: 1px solid rgba(187,255,182,0.2);
+      border-radius: 8px;
+      padding: 12px 16px;
+      font-size: 15px;
+      color: #F1F0EC;
+      text-align: center;
+      letter-spacing: 3px;
+      outline: none;
+      margin-bottom: 12px;
+      font-family: 'Inter', sans-serif;
+      transition: border-color 0.2s;
+    }
+    .pw-input:focus { border-color: #BBFFB6; }
+    .pw-input.shake {
+      animation: shake 0.4s ease;
+      border-color: #ff6b6b;
+    }
+    .pw-btn {
+      width: 100%;
+      background: #BBFFB6;
+      color: #091B20;
+      font-weight: 700;
+      font-size: 14px;
+      padding: 12px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-family: 'Inter', sans-serif;
+      transition: opacity 0.2s;
+    }
+    .pw-btn:hover { opacity: 0.85; }
+    .pw-error {
+      font-size: 12px;
+      color: #ff6b6b;
+      margin-top: 10px;
+      height: 16px;
+    }
+    @keyframes shake {
+      0%,100% { transform: translateX(0); }
+      20%      { transform: translateX(-8px); }
+      40%      { transform: translateX(8px); }
+      60%      { transform: translateX(-6px); }
+      80%      { transform: translateX(6px); }
+    }
+
+    :root {
+      --bg:        #091B20;
+      --bg2:       #0d2329;
+      --bg3:       #112830;
+      --accent:    #BBFFB6;
+      --accent2:   #8fe08a;
+      --text:      #F1F0EC;
+      --muted:     #DBDAD3;
+      --dim:       #7a8a8e;
+      --red:       #ff6b6b;
+      --border:    rgba(187,255,182,0.12);
+      --radius:    12px;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    /* ── HEADER ── */
+    header {
+      padding: 28px 40px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    .logo {
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      color: var(--accent);
+    }
+    .logo span { color: var(--text); }
+    .header-meta {
+      font-size: 12px;
+      color: var(--dim);
+    }
+    #periodLabel {
+      font-size: 12px;
+      color: var(--muted);
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 4px 12px;
+    }
+
+    /* ── UPLOAD SCREEN ── */
+    #uploadScreen {
+      max-width: 860px;
+      margin: 80px auto;
+      padding: 0 24px;
+      text-align: center;
+    }
+    #uploadScreen h1 {
+      font-size: 28px;
+      font-weight: 700;
+      margin-bottom: 10px;
+      letter-spacing: -0.5px;
+    }
+    #uploadScreen p {
+      color: var(--muted);
+      margin-bottom: 48px;
+    }
+    .upload-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+    .upload-card {
+      background: var(--bg2);
+      border: 2px dashed var(--border);
+      border-radius: var(--radius);
+      padding: 28px 16px;
+      cursor: pointer;
+      transition: all 0.2s;
+      position: relative;
+      overflow: hidden;
+    }
+    .upload-card:hover { border-color: var(--accent); background: var(--bg3); }
+    .upload-card.loaded { border-style: solid; border-color: var(--accent); }
+    .upload-card.loaded::after {
+      content: '✓';
+      position: absolute;
+      top: 10px; right: 10px;
+      color: var(--accent);
+      font-weight: 700;
+      font-size: 14px;
+    }
+    .upload-card input[type="file"] {
+      display: none;
+    }
+    .upload-icon { font-size: 28px; margin-bottom: 10px; }
+    .upload-card h3 { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+    .upload-card p { font-size: 12px; color: var(--dim); margin: 0; }
+    .btn-primary {
+      background: var(--accent);
+      color: var(--bg);
+      font-weight: 700;
+      font-size: 15px;
+      padding: 14px 36px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+    .btn-primary:disabled { opacity: 0.3; cursor: not-allowed; }
+    .btn-primary:not(:disabled):hover { opacity: 0.88; }
+    .upload-hint {
+      margin-top: 20px;
+      font-size: 12px;
+      color: var(--dim);
+    }
+    .upload-hint a { color: var(--accent); text-decoration: none; }
+
+    /* ── DASHBOARD ── */
+    #dashboard { display: none; padding: 32px 40px; }
+
+    /* KPI row */
+    .kpi-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+    .kpi {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px 22px;
+    }
+    .kpi-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.8px; color: var(--dim); margin-bottom: 8px; }
+    .kpi-value { font-size: 26px; font-weight: 700; letter-spacing: -1px; color: var(--text); }
+    .kpi-value.green { color: var(--accent); }
+    .kpi-value.red { color: var(--red); }
+    .kpi-sub { font-size: 11px; color: var(--dim); margin-top: 4px; }
+    .kpi-sub.green { color: var(--accent); }
+    .kpi-sub.red { color: var(--red); }
+
+    /* Sections */
+    .section { margin-bottom: 40px; }
+    .section-title {
+      font-size: 13px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--dim);
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .section-title::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    /* Chart grid */
+    .chart-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+      gap: 20px;
+    }
+    .chart-card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 22px;
+    }
+    .chart-card h3 {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--muted);
+      margin-bottom: 16px;
+    }
+    .chart-wrap { position: relative; height: 220px; }
+
+    /* Tables */
+    .table-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 20px;
+    }
+    .table-card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    .table-card h3 {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--muted);
+      padding: 16px 20px 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    table { width: 100%; border-collapse: collapse; }
+    th {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--dim);
+      padding: 10px 20px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+    td {
+      padding: 10px 20px;
+      font-size: 13px;
+      border-bottom: 1px solid rgba(255,255,255,0.03);
+      color: var(--text);
+    }
+    tr:last-child td { border-bottom: none; }
+    .rank-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 22px; height: 22px;
+      border-radius: 50%;
+      font-size: 11px;
+      font-weight: 700;
+    }
+    .rank-1 { background: var(--accent); color: var(--bg); }
+    .rank-2 { background: rgba(187,255,182,0.25); color: var(--accent); }
+    .rank-3 { background: rgba(187,255,182,0.1); color: var(--accent2); }
+    .rank-n { background: var(--bg3); color: var(--dim); }
+
+    /* Follower trend */
+    .follower-card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 22px;
+      margin-bottom: 20px;
+    }
+    .follower-card h3 {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--muted);
+      margin-bottom: 16px;
+    }
+    .follower-wrap { position: relative; height: 200px; }
+
+    /* Insights */
+    .insights-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px;
+    }
+    .insight-card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+    }
+    .insight-card.highlight { border-color: rgba(187,255,182,0.4); }
+    .insight-tag {
+      display: inline-block;
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      padding: 3px 8px;
+      border-radius: 4px;
+      margin-bottom: 10px;
+    }
+    .tag-green { background: rgba(187,255,182,0.15); color: var(--accent); }
+    .tag-yellow { background: rgba(255,210,100,0.15); color: #ffd264; }
+    .tag-red { background: rgba(255,107,107,0.15); color: var(--red); }
+    .insight-card h4 { font-size: 14px; font-weight: 600; margin-bottom: 6px; }
+    .insight-card p { font-size: 13px; color: var(--muted); line-height: 1.6; }
+
+    /* Reset btn */
+    .reset-btn {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--dim);
+      font-size: 12px;
+      padding: 6px 14px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .reset-btn:hover { border-color: var(--muted); color: var(--text); }
+
+    /* Tabs */
+    .tabs {
+      display: flex;
+      gap: 4px;
+      margin-bottom: 24px;
+      background: var(--bg2);
+      padding: 4px;
+      border-radius: 10px;
+      width: fit-content;
+    }
+    .tab {
+      padding: 8px 18px;
+      border-radius: 7px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+      background: transparent;
+      color: var(--dim);
+      transition: all 0.2s;
+    }
+    .tab.active { background: var(--bg3); color: var(--text); }
+    .tab:hover:not(.active) { color: var(--muted); }
+
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--bg3); border-radius: 3px; }
+
+    @media (max-width: 640px) {
+      header { padding: 20px; }
+      #dashboard { padding: 20px; }
+      .kpi-row { grid-template-columns: repeat(2, 1fr); }
+    }
+  </style>
+</head>
+<body>
+
+<!-- PASSWORD SCREEN -->
+<div id="passwordScreen">
+  <div class="pw-box">
+    <div class="pw-logo">BB<span> Instagram</span></div>
+    <div class="pw-sub">Voer het wachtwoord in om verder te gaan</div>
+    <input class="pw-input" type="password" id="pwInput" placeholder="••••••••"
+      onkeydown="if(event.key==='Enter') checkPassword()" autofocus />
+    <button class="pw-btn" onclick="checkPassword()">Toegang →</button>
+    <div class="pw-error" id="pwError"></div>
+  </div>
+</div>
+
+<!-- HEADER (always visible) -->
+<header>
+  <div class="logo">BB<span> Instagram</span></div>
+  <span id="periodLabel" style="display:none">–</span>
+  <div style="display:flex;gap:10px;align-items:center">
+    <button class="reset-btn" id="resetBtn" style="display:none" onclick="resetDashboard()">↩ Nieuwe upload</button>
+    <div class="header-meta">Later CSV Export</div>
+  </div>
+</header>
+
+<!-- UPLOAD SCREEN -->
+<div id="uploadScreen">
+  <h1>Instagram Performance Dashboard</h1>
+  <p>Upload je weekelijkse Later exports — het dashboard berekent alles automatisch.</p>
+
+  <div class="upload-grid">
+    <label class="upload-card" id="card-stories">
+      <input type="file" accept=".csv,.CSV" data-type="stories" onchange="handleFile(this)">
+      <div class="upload-icon">📖</div>
+      <h3>Stories</h3>
+      <p>Detailed Story Performance CSV</p>
+    </label>
+    <label class="upload-card" id="card-reels">
+      <input type="file" accept=".csv,.CSV" data-type="reels" onchange="handleFile(this)">
+      <div class="upload-icon">🎬</div>
+      <h3>Reels</h3>
+      <p>Detailed Reel Performance CSV</p>
+    </label>
+    <label class="upload-card" id="card-posts">
+      <input type="file" accept=".csv,.CSV" data-type="posts" onchange="handleFile(this)">
+      <div class="upload-icon">🖼️</div>
+      <h3>Posts</h3>
+      <p>Detailed Post Performance CSV</p>
+    </label>
+    <label class="upload-card" id="card-profile">
+      <input type="file" accept=".csv,.CSV" data-type="profile" onchange="handleFile(this)">
+      <div class="upload-icon">📈</div>
+      <h3>Profiel Groei</h3>
+      <p>Profile Growth & Discovery CSV</p>
+    </label>
+  </div>
+
+  <button class="btn-primary" id="buildBtn" disabled onclick="buildDashboard()">Dashboard bouwen →</button>
+  <p class="upload-hint">
+    Export via Later → Analytics → tabblad → Export button (desktop only) ·
+    <a href="https://later.com" target="_blank">later.com</a>
+  </p>
+</div>
+
+<!-- DASHBOARD -->
+<div id="dashboard">
+
+  <!-- TABS -->
+  <div class="tabs">
+    <button class="tab active" onclick="showTab('overview')">Overzicht</button>
+    <button class="tab" onclick="showTab('reels')">Reels</button>
+    <button class="tab" onclick="showTab('stories')">Stories</button>
+    <button class="tab" onclick="showTab('posts')">Posts</button>
+    <button class="tab" onclick="showTab('growth')">Groei</button>
+    <button class="tab" onclick="showTab('insights')">Inzichten</button>
+  </div>
+
+  <!-- OVERVIEW TAB -->
+  <div id="tab-overview" class="tab-content active">
+    <div class="kpi-row" id="kpiRow"></div>
+
+    <div class="section">
+      <div class="section-title">Follower Beweging</div>
+      <div class="follower-card">
+        <h3>Volgers per week — groei &amp; verlies</h3>
+        <div class="follower-wrap"><canvas id="followerChart"></canvas></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Bereik per format</div>
+      <div class="chart-grid">
+        <div class="chart-card">
+          <h3>Gemiddeld bereik per format</h3>
+          <div class="chart-wrap"><canvas id="reachByFormatChart"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <h3>Engagement rate per format</h3>
+          <div class="chart-wrap"><canvas id="engByFormatChart"></canvas></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Top performers</div>
+      <div class="table-grid">
+        <div class="table-card">
+          <h3>🎬 Top 5 Reels — Views</h3>
+          <table>
+            <thead><tr><th>#</th><th>Datum</th><th>Views</th><th>Likes</th></tr></thead>
+            <tbody id="topReelsTable"></tbody>
+          </table>
+        </div>
+        <div class="table-card">
+          <h3>📖 Top 5 Stories — Bereik</h3>
+          <table>
+            <thead><tr><th>#</th><th>Datum</th><th>Bereik</th><th>Completion</th></tr></thead>
+            <tbody id="topStoriesTable"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- REELS TAB -->
+  <div id="tab-reels" class="tab-content">
+    <div class="kpi-row" id="reelKpis"></div>
+    <div class="section">
+      <div class="section-title">Reel views over tijd</div>
+      <div class="chart-card">
+        <h3>Views per reel (chronologisch)</h3>
+        <div style="position:relative;height:280px"><canvas id="reelTimelineChart"></canvas></div>
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-title">Alle reels</div>
+      <div class="table-card">
+        <h3>Reel performance detail</h3>
+        <table>
+          <thead><tr><th>#</th><th>Datum</th><th>Views</th><th>Likes</th><th>Comments</th><th>Shares</th><th>Saves</th></tr></thead>
+          <tbody id="allReelsTable"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- STORIES TAB -->
+  <div id="tab-stories" class="tab-content">
+    <div class="kpi-row" id="storyKpis"></div>
+    <div class="section">
+      <div class="section-title">Story completion rate over tijd</div>
+      <div class="chart-card">
+        <h3>Completion rate % per week</h3>
+        <div style="position:relative;height:280px"><canvas id="storyCompletionChart"></canvas></div>
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-title">Top stories</div>
+      <div class="table-card">
+        <h3>Story performance detail (top 20)</h3>
+        <table>
+          <thead><tr><th>#</th><th>Datum</th><th>Bereik</th><th>Impressies</th><th>Completion %</th><th>Replies</th></tr></thead>
+          <tbody id="allStoriesTable"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- POSTS TAB -->
+  <div id="tab-posts" class="tab-content">
+    <div class="kpi-row" id="postKpis"></div>
+    <div class="section">
+      <div class="section-title">Post bereik over tijd</div>
+      <div class="chart-card">
+        <h3>Bereik per post (chronologisch)</h3>
+        <div style="position:relative;height:280px"><canvas id="postTimelineChart"></canvas></div>
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-title">Alle posts</div>
+      <div class="table-card">
+        <h3>Post performance detail</h3>
+        <table>
+          <thead><tr><th>#</th><th>Datum</th><th>Bereik</th><th>Likes</th><th>Comments</th><th>Saves</th></tr></thead>
+          <tbody id="allPostsTable"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- GROWTH TAB -->
+  <div id="tab-growth" class="tab-content">
+    <div class="kpi-row" id="growthKpis"></div>
+    <div class="section">
+      <div class="section-title">Follower trend</div>
+      <div class="follower-card">
+        <h3>Totaal volgers over tijd</h3>
+        <div class="follower-wrap"><canvas id="totalFollowerChart"></canvas></div>
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-title">Wekelijkse groei detail</div>
+      <div class="table-card">
+        <h3>Groei per week</h3>
+        <table>
+          <thead><tr><th>Week</th><th>Nieuwe volgers</th><th>Verlies</th><th>Netto</th><th>Totaal</th></tr></thead>
+          <tbody id="growthTable"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- INSIGHTS TAB -->
+  <div id="tab-insights" class="tab-content">
+    <div class="section">
+      <div class="section-title">Strategische inzichten</div>
+      <div class="insights-grid" id="insightsGrid"></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+// PASSWORD
+// ═══════════════════════════════════════════════════════════
+(function() {
+  if (sessionStorage.getItem('bb_auth') === '1') {
+    document.getElementById('passwordScreen').classList.add('hidden');
+  }
+})();
+
+function checkPassword() {
+  const val = document.getElementById('pwInput').value;
+  if (val.toLowerCase() === 'thailand') {
+    sessionStorage.setItem('bb_auth', '1');
+    document.getElementById('passwordScreen').classList.add('hidden');
+  } else {
+    const input = document.getElementById('pwInput');
+    const err   = document.getElementById('pwError');
+    input.classList.add('shake');
+    err.textContent = 'Onjuist wachtwoord';
+    input.value = '';
+    setTimeout(() => { input.classList.remove('shake'); err.textContent = ''; }, 1500);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════════
+const state = {
+  stories: null,
+  reels: null,
+  posts: null,
+  profile: null
+};
+
+let charts = {};
+
+// ═══════════════════════════════════════════════════════════
+// FILE HANDLING
+// ═══════════════════════════════════════════════════════════
+function handleFile(input) {
+  const type = input.dataset.type;
+  const file = input.files[0];
+  if (!file) return;
+
+  Papa.parse(file, {
+    header: true,
+    skipEmptyLines: true,
+    dynamicTyping: true,
+    complete(results) {
+      state[type] = results.data;
+      document.getElementById('card-' + type).classList.add('loaded');
+      checkAllLoaded();
+    }
+  });
+}
+
+function checkAllLoaded() {
+  const loaded = Object.values(state).filter(Boolean).length;
+  document.getElementById('buildBtn').disabled = loaded === 0;
+  if (loaded === 4) document.getElementById('buildBtn').textContent = 'Dashboard bouwen →';
+  else document.getElementById('buildBtn').textContent = `Dashboard bouwen (${loaded}/4 geladen) →`;
+}
+
+// ═══════════════════════════════════════════════════════════
+// UTILITIES
+// ═══════════════════════════════════════════════════════════
+function n(v) { return typeof v === 'number' && !isNaN(v) ? v : 0; }
+function fmt(v) { return v >= 1000 ? (v/1000).toFixed(1)+'K' : String(v); }
+function fmtPct(v) { return v.toFixed(1)+'%'; }
+function parseDate(str) {
+  if (!str) return null;
+  // Try formats: YYYY-MM-DD, DD/MM/YYYY, MM/DD/YYYY
+  let d = new Date(str);
+  if (!isNaN(d)) return d;
+  const parts = str.split(/[\/\-]/);
+  if (parts.length === 3) {
+    // DD/MM/YYYY
+    d = new Date(`${parts[2]}-${parts[1].padStart(2,'0')}-${parts[0].padStart(2,'0')}`);
+    if (!isNaN(d)) return d;
+  }
+  return null;
+}
+function fmtDate(d) {
+  if (!d) return '–';
+  return d.toLocaleDateString('nl-NL', { day:'2-digit', month:'short', year:'2-digit' });
+}
+
+// Find a column by partial name match (case-insensitive)
+function col(row, ...names) {
+  const keys = Object.keys(row);
+  for (const name of names) {
+    const k = keys.find(k => k.toLowerCase().includes(name.toLowerCase()));
+    if (k !== undefined) return n(row[k]);
+  }
+  return 0;
+}
+function colStr(row, ...names) {
+  const keys = Object.keys(row);
+  for (const name of names) {
+    const k = keys.find(k => k.toLowerCase().includes(name.toLowerCase()));
+    if (k !== undefined) return row[k] || '';
+  }
+  return '';
+}
+function dateCol(row) {
+  return colStr(row, 'date', 'datum', 'time', 'periode');
+}
+
+// ═══════════════════════════════════════════════════════════
+// CHART HELPERS
+// ═══════════════════════════════════════════════════════════
+const C = {
+  accent: '#BBFFB6',
+  accent2: '#8fe08a',
+  red: '#ff6b6b',
+  dim: '#7a8a8e',
+  muted: '#DBDAD3',
+  grid: 'rgba(187,255,182,0.06)',
+  bg2: '#0d2329'
+};
+
+function baseOpts(yLabel) {
+  return {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { display: false }, tooltip: { callbacks: {} } },
+    scales: {
+      x: { grid: { color: C.grid }, ticks: { color: C.dim, font: { size: 11 }, maxRotation: 45 } },
+      y: { grid: { color: C.grid }, ticks: { color: C.dim, font: { size: 11 } },
+           title: { display: !!yLabel, text: yLabel, color: C.dim, font: { size: 11 } } }
+    }
+  };
+}
+
+function destroyChart(id) {
+  if (charts[id]) { charts[id].destroy(); delete charts[id]; }
+}
+
+function makeBarChart(id, labels, data, color) {
+  destroyChart(id);
+  const ctx = document.getElementById(id).getContext('2d');
+  charts[id] = new Chart(ctx, {
+    type: 'bar',
+    data: { labels, datasets: [{ data, backgroundColor: color || C.accent, borderRadius: 4 }] },
+    options: baseOpts()
+  });
+}
+
+function makeLineChart(id, labels, datasets) {
+  destroyChart(id);
+  const ctx = document.getElementById(id).getContext('2d');
+  charts[id] = new Chart(ctx, {
+    type: 'line',
+    data: { labels, datasets },
+    options: { ...baseOpts(), tension: 0.4 }
+  });
+}
+
+// ═══════════════════════════════════════════════════════════
+// BUILD KPI CARD HTML
+// ═══════════════════════════════════════════════════════════
+function kpiHTML(label, value, sub, colorClass) {
+  return `<div class="kpi">
+    <div class="kpi-label">${label}</div>
+    <div class="kpi-value ${colorClass||''}">${value}</div>
+    ${sub ? `<div class="kpi-sub ${colorClass||''}">${sub}</div>` : ''}
+  </div>`;
+}
+
+// ═══════════════════════════════════════════════════════════
+// BUILD DASHBOARD
+// ═══════════════════════════════════════════════════════════
+function buildDashboard() {
+  document.getElementById('uploadScreen').style.display = 'none';
+  document.getElementById('dashboard').style.display = 'block';
+  document.getElementById('resetBtn').style.display = 'inline-block';
+  document.getElementById('periodLabel').style.display = 'inline-block';
+
+  buildOverview();
+  buildReels();
+  buildStories();
+  buildPosts();
+  buildGrowth();
+  buildInsights();
+}
+
+// ── OVERVIEW ──────────────────────────────────────────────
+function buildOverview() {
+  // KPIs
+  const reels = state.reels || [];
+  const stories = state.stories || [];
+  const posts = state.posts || [];
+  const profile = state.profile || [];
+
+  const totalReelViews = reels.reduce((s,r) => s + col(r,'view','play'), 0);
+  const avgReelViews = reels.length ? Math.round(totalReelViews / reels.length) : 0;
+  const bestReel = reels.reduce((b,r) => col(r,'view','play') > col(b,'view','play') ? r : b, reels[0] || {});
+  const bestReelViews = bestReel ? col(bestReel,'view','play') : 0;
+
+  const storyReach = stories.reduce((s,r) => s + col(r,'reach','bereik'), 0);
+  const avgStoryReach = stories.length ? Math.round(storyReach / stories.length) : 0;
+
+  const completionRates = stories.map(r => col(r,'completion','exit','finish')).filter(v => v > 0);
+  const avgCompletion = completionRates.length ? completionRates.reduce((a,b)=>a+b,0)/completionRates.length : 0;
+
+  // Net follower growth from profile
+  const gains = profile.map(r => col(r,'gain','new follow','follower gain', 'new'));
+  const losses = profile.map(r => col(r,'lost','unfollow','lost follow'));
+  const netGrowth = gains.reduce((a,b)=>a+b,0) - losses.reduce((a,b)=>a+b,0);
+  const totalFollowers = profile.length ? col(profile[profile.length-1], 'total follow', 'follower count', 'total') : 0;
+
+  // Set period
+  const allDates = [...reels, ...stories, ...posts, ...profile]
+    .map(r => parseDate(dateCol(r))).filter(Boolean).sort((a,b) => a-b);
+  if (allDates.length) {
+    document.getElementById('periodLabel').textContent =
+      fmtDate(allDates[0]) + ' – ' + fmtDate(allDates[allDates.length-1]);
+  }
+
+  document.getElementById('kpiRow').innerHTML = [
+    kpiHTML('Reel views (totaal)', fmt(totalReelViews), `gem. ${fmt(avgReelViews)} / reel`),
+    kpiHTML('Beste reel', fmt(bestReelViews), 'views'),
+    kpiHTML('Story bereik (gem)', fmt(avgStoryReach), 'per story'),
+    kpiHTML('Completion rate', avgCompletion ? fmtPct(avgCompletion) : '–', 'gem. stories', avgCompletion > 70 ? 'green' : ''),
+    kpiHTML('Netto groei', (netGrowth >= 0 ? '+' : '') + netGrowth, 'volgers periode', netGrowth >= 0 ? 'green' : 'red'),
+    totalFollowers ? kpiHTML('Totaal volgers', fmt(totalFollowers), 'huidig', 'green') : ''
+  ].join('');
+
+  // Follower chart
+  buildFollowerChart('followerChart', profile);
+
+  // Reach by format
+  const avgReach = {
+    Reels: reels.length ? Math.round(reels.reduce((s,r)=>s+col(r,'reach','view','play'),0)/reels.length) : 0,
+    Stories: avgStoryReach,
+    Posts: posts.length ? Math.round(posts.reduce((s,r)=>s+col(r,'reach','bereik'),0)/posts.length) : 0
+  };
+  makeBarChart('reachByFormatChart', Object.keys(avgReach), Object.values(avgReach));
+
+  // Engagement by format
+  const avgEng = {
+    Reels: reels.length ? parseFloat((reels.reduce((s,r)=>s+(col(r,'like')+col(r,'comment')+col(r,'share')+col(r,'save')),0)/reels.length).toFixed(1)) : 0,
+    Stories: stories.length ? parseFloat((stories.reduce((s,r)=>s+col(r,'reply','reaction'),0)/stories.length).toFixed(1)) : 0,
+    Posts: posts.length ? parseFloat((posts.reduce((s,r)=>s+(col(r,'like')+col(r,'comment')+col(r,'save')),0)/posts.length).toFixed(1)) : 0
+  };
+  makeBarChart('engByFormatChart', Object.keys(avgEng), Object.values(avgEng), '#8fe08a');
+
+  // Top reels table
+  const topReels = [...reels].sort((a,b) => col(b,'view','play') - col(a,'view','play')).slice(0,5);
+  document.getElementById('topReelsTable').innerHTML = topReels.map((r,i) => {
+    const d = parseDate(dateCol(r));
+    return `<tr>
+      <td><span class="rank-badge rank-${i<3?i+1:'n'}">${i+1}</span></td>
+      <td>${fmtDate(d)}</td>
+      <td><strong>${fmt(col(r,'view','play'))}</strong></td>
+      <td>${fmt(col(r,'like'))}</td>
+    </tr>`;
+  }).join('');
+
+  // Top stories table
+  const topStories = [...stories].sort((a,b) => col(b,'reach','bereik') - col(a,'reach','bereik')).slice(0,5);
+  document.getElementById('topStoriesTable').innerHTML = topStories.map((r,i) => {
+    const d = parseDate(dateCol(r));
+    const comp = col(r,'completion','exit','finish');
+    return `<tr>
+      <td><span class="rank-badge rank-${i<3?i+1:'n'}">${i+1}</span></td>
+      <td>${fmtDate(d)}</td>
+      <td><strong>${fmt(col(r,'reach','bereik'))}</strong></td>
+      <td>${comp ? fmtPct(comp) : '–'}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ── FOLLOWER CHART (shared) ───────────────────────────────
+function buildFollowerChart(id, profile) {
+  destroyChart(id);
+  if (!profile || !profile.length) return;
+  const sorted = [...profile].sort((a,b) => {
+    const da = parseDate(dateCol(a)), db = parseDate(dateCol(b));
+    return (da||0) - (db||0);
+  });
+  const labels = sorted.map(r => { const d=parseDate(dateCol(r)); return d?fmtDate(d):''; });
+  const gains = sorted.map(r => col(r,'gain','new follow','follower gain','new'));
+  const losses = sorted.map(r => -col(r,'lost','unfollow','lost follow'));
+  const ctx = document.getElementById(id).getContext('2d');
+  charts[id] = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        { label: 'Nieuwe volgers', data: gains, backgroundColor: C.accent, borderRadius: 3 },
+        { label: 'Verlies', data: losses, backgroundColor: C.red, borderRadius: 3 }
+      ]
+    },
+    options: {
+      ...baseOpts(),
+      plugins: { legend: { display: true, labels: { color: C.muted, font: { size: 11 } } } },
+      scales: {
+        x: { stacked: true, grid: { color: C.grid }, ticks: { color: C.dim, font: { size: 10 } } },
+        y: { stacked: true, grid: { color: C.grid }, ticks: { color: C.dim, font: { size: 11 } } }
+      }
+    }
+  });
+}
+
+// ── REELS ─────────────────────────────────────────────────
+function buildReels() {
+  const reels = (state.reels || []).sort((a,b) => {
+    const da = parseDate(dateCol(a)), db = parseDate(dateCol(b));
+    return (da||0) - (db||0);
+  });
+  if (!reels.length) return;
+
+  const views = reels.map(r => col(r,'view','play'));
+  const total = views.reduce((a,b)=>a+b,0);
+  const avg = Math.round(total/reels.length);
+  const med = [...views].sort((a,b)=>a-b)[Math.floor(views.length/2)];
+  const best = Math.max(...views);
+  const likes = reels.reduce((s,r)=>s+col(r,'like'),0);
+  const saves = reels.reduce((s,r)=>s+col(r,'save'),0);
+
+  document.getElementById('reelKpis').innerHTML = [
+    kpiHTML('Totaal reels', reels.length, 'gepubliceerd'),
+    kpiHTML('Totaal views', fmt(total)),
+    kpiHTML('Gemiddeld', fmt(avg), 'views / reel'),
+    kpiHTML('Mediaan', fmt(med), 'views'),
+    kpiHTML('Beste reel', fmt(best), 'views', 'green'),
+    kpiHTML('Totaal saves', fmt(saves))
+  ].join('');
+
+  // Timeline
+  const labels = reels.map(r => { const d=parseDate(dateCol(r)); return d?fmtDate(d):''; });
+  makeLineChart('reelTimelineChart', labels, [{
+    label: 'Views', data: views,
+    borderColor: C.accent, backgroundColor: 'rgba(187,255,182,0.08)', fill: true, tension: 0.3, pointRadius: 3
+  }]);
+
+  // Table (sorted by views desc)
+  const sorted = [...reels].sort((a,b) => col(b,'view','play')-col(a,'view','play'));
+  document.getElementById('allReelsTable').innerHTML = sorted.map((r,i) => {
+    const d = parseDate(dateCol(r));
+    return `<tr>
+      <td><span class="rank-badge rank-${i<3?i+1:'n'}">${i+1}</span></td>
+      <td>${fmtDate(d)}</td>
+      <td><strong>${fmt(col(r,'view','play'))}</strong></td>
+      <td>${fmt(col(r,'like'))}</td>
+      <td>${fmt(col(r,'comment'))}</td>
+      <td>${fmt(col(r,'share'))}</td>
+      <td>${fmt(col(r,'save'))}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ── STORIES ───────────────────────────────────────────────
+function buildStories() {
+  const stories = (state.stories || []).sort((a,b) => {
+    const da = parseDate(dateCol(a)), db = parseDate(dateCol(b));
+    return (da||0) - (db||0);
+  });
+  if (!stories.length) return;
+
+  const reaches = stories.map(r => col(r,'reach','bereik'));
+  const totalReach = reaches.reduce((a,b)=>a+b,0);
+  const avgReach = Math.round(totalReach/stories.length);
+  const completions = stories.map(r => col(r,'completion','exit','finish')).filter(v=>v>0);
+  const avgComp = completions.length ? completions.reduce((a,b)=>a+b,0)/completions.length : 0;
+  const replies = stories.reduce((s,r)=>s+col(r,'reply','reaction'),0);
+  const imps = stories.reduce((s,r)=>s+col(r,'impression'),0);
+
+  document.getElementById('storyKpis').innerHTML = [
+    kpiHTML('Totaal stories', stories.length),
+    kpiHTML('Totaal bereik', fmt(totalReach)),
+    kpiHTML('Gem. bereik', fmt(avgReach), 'per story'),
+    kpiHTML('Gem. completion', avgComp ? fmtPct(avgComp) : '–', '', avgComp>70?'green':avgComp>50?'':'red'),
+    kpiHTML('Totaal replies', fmt(replies)),
+    imps ? kpiHTML('Totaal impressies', fmt(imps)) : ''
+  ].join('');
+
+  // Completion chart (weekly avg)
+  const weekMap = {};
+  stories.forEach(r => {
+    const d = parseDate(dateCol(r));
+    if (!d) return;
+    const week = `${d.getFullYear()}-W${String(getWeekNum(d)).padStart(2,'0')}`;
+    if (!weekMap[week]) weekMap[week] = [];
+    const c = col(r,'completion','exit','finish');
+    if (c > 0) weekMap[week].push(c);
+  });
+  const wLabels = Object.keys(weekMap).sort();
+  const wData = wLabels.map(w => {
+    const arr = weekMap[w];
+    return arr.length ? parseFloat((arr.reduce((a,b)=>a+b,0)/arr.length).toFixed(1)) : null;
+  });
+  makeLineChart('storyCompletionChart', wLabels, [{
+    label: 'Completion %', data: wData,
+    borderColor: C.accent, backgroundColor: 'rgba(187,255,182,0.08)', fill: true, tension: 0.4,
+    spanGaps: true, pointRadius: 4
+  }]);
+
+  // Top 20 stories table
+  const top20 = [...stories].sort((a,b) => col(b,'reach','bereik')-col(a,'reach','bereik')).slice(0,20);
+  document.getElementById('allStoriesTable').innerHTML = top20.map((r,i) => {
+    const d = parseDate(dateCol(r));
+    const comp = col(r,'completion','exit','finish');
+    return `<tr>
+      <td><span class="rank-badge rank-${i<3?i+1:'n'}">${i+1}</span></td>
+      <td>${fmtDate(d)}</td>
+      <td><strong>${fmt(col(r,'reach','bereik'))}</strong></td>
+      <td>${fmt(col(r,'impression'))}</td>
+      <td>${comp ? fmtPct(comp) : '–'}</td>
+      <td>${fmt(col(r,'reply','reaction'))}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ── POSTS ─────────────────────────────────────────────────
+function buildPosts() {
+  const posts = (state.posts || []).sort((a,b) => {
+    const da = parseDate(dateCol(a)), db = parseDate(dateCol(b));
+    return (da||0) - (db||0);
+  });
+  if (!posts.length) return;
+
+  const reaches = posts.map(r => col(r,'reach','bereik'));
+  const totalReach = reaches.reduce((a,b)=>a+b,0);
+  const avgReach = Math.round(totalReach/posts.length);
+  const likes = posts.reduce((s,r)=>s+col(r,'like'),0);
+  const saves = posts.reduce((s,r)=>s+col(r,'save'),0);
+  const comments = posts.reduce((s,r)=>s+col(r,'comment'),0);
+
+  document.getElementById('postKpis').innerHTML = [
+    kpiHTML('Totaal posts', posts.length),
+    kpiHTML('Totaal bereik', fmt(totalReach)),
+    kpiHTML('Gem. bereik', fmt(avgReach)),
+    kpiHTML('Totaal likes', fmt(likes)),
+    kpiHTML('Totaal saves', fmt(saves)),
+    kpiHTML('Totaal comments', fmt(comments))
+  ].join('');
+
+  makeLineChart('postTimelineChart', posts.map(r => fmtDate(parseDate(dateCol(r)))), [{
+    label: 'Bereik', data: reaches,
+    borderColor: '#ffd264', backgroundColor: 'rgba(255,210,100,0.08)', fill: true, tension: 0.3, pointRadius: 3
+  }]);
+
+  const sorted = [...posts].sort((a,b) => col(b,'reach','bereik')-col(a,'reach','bereik'));
+  document.getElementById('allPostsTable').innerHTML = sorted.map((r,i) => {
+    const d = parseDate(dateCol(r));
+    return `<tr>
+      <td><span class="rank-badge rank-${i<3?i+1:'n'}">${i+1}</span></td>
+      <td>${fmtDate(d)}</td>
+      <td><strong>${fmt(col(r,'reach','bereik'))}</strong></td>
+      <td>${fmt(col(r,'like'))}</td>
+      <td>${fmt(col(r,'comment'))}</td>
+      <td>${fmt(col(r,'save'))}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ── GROWTH ────────────────────────────────────────────────
+function buildGrowth() {
+  const profile = (state.profile || []).sort((a,b) => {
+    const da = parseDate(dateCol(a)), db = parseDate(dateCol(b));
+    return (da||0) - (db||0);
+  });
+  if (!profile.length) return;
+
+  const gains = profile.map(r => col(r,'gain','new follow','follower gain','new'));
+  const losses = profile.map(r => col(r,'lost','unfollow','lost follow'));
+  const totals = profile.map(r => col(r,'total follow','follower count','total','followers'));
+  const netArr = gains.map((g,i)=>g-losses[i]);
+  const totalGain = gains.reduce((a,b)=>a+b,0);
+  const totalLoss = losses.reduce((a,b)=>a+b,0);
+  const net = totalGain - totalLoss;
+  const bestWeek = profile[gains.indexOf(Math.max(...gains))];
+  const worstWeek = profile[netArr.indexOf(Math.min(...netArr))];
+
+  document.getElementById('growthKpis').innerHTML = [
+    kpiHTML('Nieuwe volgers', fmt(totalGain), 'periode totaal', 'green'),
+    kpiHTML('Verlies', fmt(totalLoss), 'periode totaal', 'red'),
+    kpiHTML('Netto groei', (net>=0?'+':'')+net, '', net>=0?'green':'red'),
+    kpiHTML('Beste week', fmt(Math.max(...gains)), 'nieuwe volgers'),
+    totals[totals.length-1] ? kpiHTML('Totaal nu', fmt(totals[totals.length-1]), 'volgers') : ''
+  ].join('');
+
+  // Total follower trend
+  if (totals.some(t=>t>0)) {
+    buildFollowerTotalChart(profile, totals);
+  } else {
+    // Fallback: cumulative from gains/losses
+    let running = 0;
+    const cumulative = netArr.map(n => { running += n; return running; });
+    destroyChart('totalFollowerChart');
+    const ctx = document.getElementById('totalFollowerChart').getContext('2d');
+    charts['totalFollowerChart'] = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: profile.map(r => fmtDate(parseDate(dateCol(r)))),
+        datasets: [{ label: 'Netto cumulatief', data: cumulative, borderColor: C.accent, backgroundColor: 'rgba(187,255,182,0.08)', fill: true, tension: 0.4 }]
+      },
+      options: { ...baseOpts(), plugins: { legend: { display: false } } }
+    });
+  }
+
+  // Growth table
+  document.getElementById('growthTable').innerHTML = profile.map((r,i) => {
+    const d = parseDate(dateCol(r));
+    const g = gains[i], l = losses[i], net2 = g-l;
+    return `<tr>
+      <td>${fmtDate(d)}</td>
+      <td style="color:var(--accent)">+${g}</td>
+      <td style="color:var(--red)">-${l}</td>
+      <td style="color:${net2>=0?'var(--accent)':'var(--red)'};font-weight:600">${net2>=0?'+':''}${net2}</td>
+      <td>${totals[i]||'–'}</td>
+    </tr>`;
+  }).reverse().join('');
+}
+
+function buildFollowerTotalChart(profile, totals) {
+  destroyChart('totalFollowerChart');
+  const ctx = document.getElementById('totalFollowerChart').getContext('2d');
+  charts['totalFollowerChart'] = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: profile.map(r => fmtDate(parseDate(dateCol(r)))),
+      datasets: [{ label: 'Totaal volgers', data: totals, borderColor: C.accent, backgroundColor: 'rgba(187,255,182,0.08)', fill: true, tension: 0.4, pointRadius: 2 }]
+    },
+    options: { ...baseOpts(), plugins: { legend: { display: false } } }
+  });
+}
+
+// ── INSIGHTS ──────────────────────────────────────────────
+function buildInsights() {
+  const reels = state.reels || [];
+  const stories = state.stories || [];
+  const posts = state.posts || [];
+  const profile = state.profile || [];
+
+  const insights = [];
+
+  // Best format by avg reach
+  const avgReelReach = reels.length ? Math.round(reels.reduce((s,r)=>s+col(r,'view','play'),0)/reels.length) : 0;
+  const avgStoryReach = stories.length ? Math.round(stories.reduce((s,r)=>s+col(r,'reach','bereik'),0)/stories.length) : 0;
+  const avgPostReach = posts.length ? Math.round(posts.reduce((s,r)=>s+col(r,'reach','bereik'),0)/posts.length) : 0;
+  const formats = [['Reels', avgReelReach], ['Stories', avgStoryReach], ['Posts', avgPostReach]].sort((a,b)=>b[1]-a[1]);
+  if (formats[0][1] > 0) {
+    insights.push({ tag: 'green', label: 'Sterkste format', title: `${formats[0][0]} winnen op bereik`, text: `Gem. ${fmt(formats[0][1])} vs ${fmt(formats[1][1])} voor ${formats[1][0]}. Focus hier meer op.` });
+  }
+
+  // Story completion
+  const compRates = stories.map(r => col(r,'completion','exit','finish')).filter(v=>v>0);
+  if (compRates.length) {
+    const avg = compRates.reduce((a,b)=>a+b,0)/compRates.length;
+    const tag = avg > 75 ? 'green' : avg > 50 ? 'yellow' : 'red';
+    insights.push({ tag, label: 'Story kwaliteit', title: `${fmtPct(avg)} completion rate`, text: avg > 75 ? 'Sterk! Mensen kijken door. Behoud de huidige story structuur.' : avg > 50 ? 'Gemiddeld. Kijk of de eerste slide sterker kan.' : 'Mensen haken vroeg af. Sterk de openingsslide aan.' });
+  }
+
+  // Reel outliers
+  if (reels.length > 3) {
+    const views = reels.map(r => col(r,'view','play'));
+    const avg = views.reduce((a,b)=>a+b,0)/views.length;
+    const med = [...views].sort((a,b)=>a-b)[Math.floor(views.length/2)];
+    if (avg > med * 1.5) {
+      const topReel = reels[views.indexOf(Math.max(...views))];
+      const d = parseDate(dateCol(topReel));
+      insights.push({ tag: 'yellow', label: 'Uitschieters', title: 'Enkele reels doen het extreem goed', text: `Mediaan ${fmt(med)} views, maar uitschieters tot ${fmt(Math.max(...views))} views (${fmtDate(d)}). Analyseer wat deze reels anders doen.` });
+    }
+  }
+
+  // Follower trend
+  const gains = profile.map(r => col(r,'gain','new follow','follower gain','new'));
+  const losses = profile.map(r => col(r,'lost','unfollow','lost follow'));
+  const net = gains.reduce((a,b)=>a+b,0) - losses.reduce((a,b)=>a+b,0);
+  if (net !== 0) {
+    insights.push({ tag: net > 0 ? 'green' : 'red', label: 'Groei', title: `${net > 0 ? '+' : ''}${net} volgers netto`, text: net > 0 ? `${gains.reduce((a,b)=>a+b,0)} nieuwe volgers, ${losses.reduce((a,b)=>a+b,0)} verlies. Positieve trend.` : `${losses.reduce((a,b)=>a+b,0)} verlies > ${gains.reduce((a,b)=>a+b,0)} nieuwe volgers. Overweeg meer awareness content.` });
+  }
+
+  // Saves / saves ratio
+  const totalSaves = reels.reduce((s,r)=>s+col(r,'save'),0) + posts.reduce((s,r)=>s+col(r,'save'),0);
+  if (totalSaves > 0) {
+    insights.push({ tag: 'green', label: 'Waarde indicator', title: `${fmt(totalSaves)} saves`, text: 'Saves = mensen bewaren je content voor later. Dat is een sterk signaal van waarde. Meer educational / how-to content werkt hier goed voor.' });
+  }
+
+  // Publishing frequency
+  const allContent = [...reels, ...stories.slice(0,1), ...posts]; // rough count
+  const totalPieces = reels.length + posts.length;
+  if (totalPieces > 0) {
+    insights.push({ tag: 'yellow', label: 'Frequentie', title: `${totalPieces} reels + posts gepubliceerd`, text: `Dat is ${(totalPieces/52).toFixed(1)} stukken per week gemiddeld over een jaar. Consistentie is bepalender dan piekfrequentie.` });
+  }
+
+  document.getElementById('insightsGrid').innerHTML = insights.map(ins => `
+    <div class="insight-card ${ins.tag==='green'?'highlight':''}">
+      <span class="insight-tag tag-${ins.tag}">${ins.label}</span>
+      <h4>${ins.title}</h4>
+      <p>${ins.text}</p>
+    </div>
+  `).join('');
+}
+
+// ── HELPERS ───────────────────────────────────────────────
+function getWeekNum(d) {
+  const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  const dayNum = date.getUTCDay() || 7;
+  date.setUTCDate(date.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(date.getUTCFullYear(),0,1));
+  return Math.ceil((((date - yearStart) / 86400000) + 1) / 7);
+}
+
+function showTab(name) {
+  document.querySelectorAll('.tab').forEach((t,i) => {
+    const names = ['overview','reels','stories','posts','growth','insights'];
+    t.classList.toggle('active', names[i] === name);
+  });
+  document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+}
+
+function resetDashboard() {
+  Object.keys(state).forEach(k => state[k] = null);
+  document.querySelectorAll('.upload-card').forEach(c => c.classList.remove('loaded'));
+  document.querySelectorAll('input[type="file"]').forEach(i => i.value = '');
+  document.getElementById('uploadScreen').style.display = 'block';
+  document.getElementById('dashboard').style.display = 'none';
+  document.getElementById('resetBtn').style.display = 'none';
+  document.getElementById('periodLabel').style.display = 'none';
+  document.getElementById('buildBtn').disabled = true;
+  document.getElementById('buildBtn').textContent = 'Dashboard bouwen →';
+  Object.values(charts).forEach(c => c.destroy());
+  charts = {};
+}
+</script>
+</body>
+</html>
