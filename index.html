@@ -408,6 +408,22 @@
     .tab-content { display: none; }
     .tab-content.active { display: block; }
 
+    /* Reel subtabs */
+    .reel-subtab {
+      padding: 7px 16px;
+      border-radius: 7px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--dim);
+      font-family: 'Inter', sans-serif;
+      transition: all 0.2s;
+    }
+    .reel-subtab.active { background: var(--bg3); color: var(--text); border-color: var(--accent); }
+    .reel-subtab:hover:not(.active) { color: var(--muted); }
+
     /* Scrollbar */
     ::-webkit-scrollbar { width: 6px; height: 6px; }
     ::-webkit-scrollbar-track { background: var(--bg); }
@@ -545,24 +561,73 @@
 
   <!-- REELS TAB -->
   <div id="tab-reels" class="tab-content">
-    <div class="kpi-row" id="reelKpis"></div>
-    <div class="section">
-      <div class="section-title">Reel views over tijd</div>
-      <div class="chart-card">
-        <h3>Views per reel (chronologisch)</h3>
-        <div style="position:relative;height:280px"><canvas id="reelTimelineChart"></canvas></div>
+
+    <!-- Trial Reels invoer -->
+    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:18px 22px;margin-bottom:24px;">
+      <div style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.8px;color:var(--dim);margin-bottom:8px;">Trial Reels — Instagram links</div>
+      <div style="font-size:12px;color:var(--dim);margin-bottom:10px)">Plak hier de Instagram-links van je Trial Reels (één per regel). Het dashboard scheidt ze automatisch van gewone Reels.</div>
+      <textarea id="trialReelUrls" placeholder="https://www.instagram.com/reel/ABC123/&#10;https://www.instagram.com/reel/DEF456/" style="width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px 14px;color:var(--muted);font-size:12px;font-family:'Inter',sans-serif;resize:vertical;min-height:70px;outline:none;line-height:1.6;" oninput="buildReels()"></textarea>
+    </div>
+
+    <!-- Subtabs: Alle / Regulier / Trial -->
+    <div style="display:flex;gap:4px;margin-bottom:20px;">
+      <button class="reel-subtab active" onclick="showReelSubtab('all')" id="rst-all">Alle reels</button>
+      <button class="reel-subtab" onclick="showReelSubtab('regular')" id="rst-regular">Reguliere reels</button>
+      <button class="reel-subtab" onclick="showReelSubtab('trial')" id="rst-trial" style="color:#ffd264;border-color:rgba(255,210,100,0.3)">Trial reels</button>
+    </div>
+
+    <!-- ALL -->
+    <div id="reelView-all" class="reel-view">
+      <div class="kpi-row" id="reelKpis"></div>
+      <div class="section">
+        <div class="section-title">Views over tijd</div>
+        <div class="chart-card"><h3>Alle reels — views chronologisch</h3>
+          <div style="position:relative;height:260px"><canvas id="reelTimelineChart"></canvas></div>
+        </div>
+      </div>
+      <div class="section">
+        <div class="section-title">Alle reels</div>
+        <div class="table-card"><h3>Performance detail</h3>
+          <table><thead><tr><th>#</th><th>Type</th><th>Datum</th><th>Views</th><th>Likes</th><th>Comments</th><th>Shares</th><th>Saves</th></tr></thead>
+          <tbody id="allReelsTable"></tbody></table>
+        </div>
       </div>
     </div>
-    <div class="section">
-      <div class="section-title">Alle reels</div>
-      <div class="table-card">
-        <h3>Reel performance detail</h3>
-        <table>
-          <thead><tr><th>#</th><th>Datum</th><th>Views</th><th>Likes</th><th>Comments</th><th>Shares</th><th>Saves</th></tr></thead>
-          <tbody id="allReelsTable"></tbody>
-        </table>
+
+    <!-- REGULAR -->
+    <div id="reelView-regular" class="reel-view" style="display:none">
+      <div class="kpi-row" id="regularReelKpis"></div>
+      <div class="section">
+        <div class="section-title">Reguliere reels — views over tijd</div>
+        <div class="chart-card"><h3>Views chronologisch</h3>
+          <div style="position:relative;height:260px"><canvas id="regularReelChart"></canvas></div>
+        </div>
+      </div>
+      <div class="section">
+        <div class="table-card"><h3>Reguliere reels detail</h3>
+          <table><thead><tr><th>#</th><th>Datum</th><th>Views</th><th>Likes</th><th>Comments</th><th>Shares</th><th>Saves</th></tr></thead>
+          <tbody id="regularReelsTable"></tbody></table>
+        </div>
       </div>
     </div>
+
+    <!-- TRIAL -->
+    <div id="reelView-trial" class="reel-view" style="display:none">
+      <div class="kpi-row" id="trialReelKpis"></div>
+      <div class="section">
+        <div class="section-title">Trial reels — views over tijd</div>
+        <div class="chart-card"><h3>Views chronologisch</h3>
+          <div style="position:relative;height:260px"><canvas id="trialReelChart"></canvas></div>
+        </div>
+      </div>
+      <div class="section">
+        <div class="table-card"><h3>Trial reels detail</h3>
+          <table><thead><tr><th>#</th><th>Datum</th><th>Views</th><th>Likes</th><th>Comments</th><th>Shares</th><th>Saves</th></tr></thead>
+          <tbody id="trialReelsTable"></tbody></table>
+        </div>
+      </div>
+    </div>
+
   </div>
 
   <!-- STORIES TAB -->
@@ -948,43 +1013,46 @@ function buildFollowerChart(id, profile) {
 }
 
 // ── REELS ─────────────────────────────────────────────────
-function buildReels() {
-  const reels = (state.reels || []).sort((a,b) => {
-    const da = parseDate(dateCol(a)), db = parseDate(dateCol(b));
-    return (da||0) - (db||0);
-  });
-  if (!reels.length) return;
+function getTrialUrls() {
+  const raw = (document.getElementById('trialReelUrls')||{}).value || '';
+  return raw.split('\n').map(u => u.trim().replace(/\/$/, '').toLowerCase()).filter(Boolean);
+}
 
-  const views = reels.map(r => col(r,'view','play'));
+function isTrialReel(r, trialUrls) {
+  if (!trialUrls.length) return false;
+  const postUrl = (colStr(r, 'instagram post', 'instagram', 'url') || '').toLowerCase().replace(/\/$/, '');
+  return trialUrls.some(u => postUrl && postUrl.includes(u.split('/reel/')[1] || '____'));
+}
+
+function reelKpiBlock(arr, prefix, color) {
+  if (!arr.length) return `<div class="kpi"><div class="kpi-label">Geen data</div></div>`;
+  const views = arr.map(r => col(r,'view','play'));
   const total = views.reduce((a,b)=>a+b,0);
-  const avg = Math.round(total/reels.length);
-  const med = [...views].sort((a,b)=>a-b)[Math.floor(views.length/2)];
-  const best = Math.max(...views);
-  const likes = reels.reduce((s,r)=>s+col(r,'like'),0);
-  const saves = reels.reduce((s,r)=>s+col(r,'save'),0);
-
-  document.getElementById('reelKpis').innerHTML = [
-    kpiHTML('Totaal reels', reels.length, 'gepubliceerd'),
+  const avg   = Math.round(total/arr.length);
+  const med   = [...views].sort((a,b)=>a-b)[Math.floor(views.length/2)];
+  const best  = Math.max(...views);
+  const saves = arr.reduce((s,r)=>s+col(r,'save'),0);
+  return [
+    kpiHTML('Aantal reels', arr.length, '', color),
     kpiHTML('Totaal views', fmt(total)),
     kpiHTML('Gemiddeld', fmt(avg), 'views / reel'),
     kpiHTML('Mediaan', fmt(med), 'views'),
     kpiHTML('Beste reel', fmt(best), 'views', 'green'),
     kpiHTML('Totaal saves', fmt(saves))
   ].join('');
+}
 
-  // Timeline
-  const labels = reels.map(r => { const d=parseDate(dateCol(r)); return d?fmtDate(d):''; });
-  makeLineChart('reelTimelineChart', labels, [{
-    label: 'Views', data: views,
-    borderColor: C.accent, backgroundColor: 'rgba(187,255,182,0.08)', fill: true, tension: 0.3, pointRadius: 3
-  }]);
-
-  // Table (sorted by views desc)
-  const sorted = [...reels].sort((a,b) => col(b,'view','play')-col(a,'view','play'));
-  document.getElementById('allReelsTable').innerHTML = sorted.map((r,i) => {
+function reelTable(arr, elId, showType) {
+  const sorted = [...arr].sort((a,b) => col(b,'view','play')-col(a,'view','play'));
+  document.getElementById(elId).innerHTML = sorted.map((r,i) => {
     const d = parseDate(dateCol(r));
+    const isTrial = r.__isTrial;
+    const typeBadge = showType
+      ? `<td><span style="font-size:10px;padding:2px 7px;border-radius:4px;font-weight:600;background:${isTrial?'rgba(255,210,100,0.15)':'rgba(187,255,182,0.1)'};color:${isTrial?'#ffd264':'var(--accent)'}">${isTrial?'Trial':'Regulier'}</span></td>`
+      : '';
     return `<tr>
       <td><span class="rank-badge rank-${i<3?i+1:'n'}">${i+1}</span></td>
+      ${typeBadge}
       <td>${fmtDate(d)}</td>
       <td><strong>${fmt(col(r,'view','play'))}</strong></td>
       <td>${fmt(col(r,'like'))}</td>
@@ -992,7 +1060,58 @@ function buildReels() {
       <td>${fmt(col(r,'share'))}</td>
       <td>${fmt(col(r,'save'))}</td>
     </tr>`;
-  }).join('');
+  }).join('') || '<tr><td colspan="8" style="color:var(--dim);text-align:center;padding:20px">Geen trial reels gevonden — voeg Instagram-links toe hierboven</td></tr>';
+}
+
+function buildReels() {
+  const allReels = (state.reels || []).sort((a,b) => {
+    const da = parseDate(dateCol(a)), db = parseDate(dateCol(b));
+    return (da||0) - (db||0);
+  });
+  if (!allReels.length) return;
+
+  const trialUrls = getTrialUrls();
+  allReels.forEach(r => { r.__isTrial = isTrialReel(r, trialUrls); });
+
+  const regular = allReels.filter(r => !r.__isTrial);
+  const trial   = allReels.filter(r => r.__isTrial);
+
+  // ── ALL reels ──
+  document.getElementById('reelKpis').innerHTML = reelKpiBlock(allReels, 'all', '');
+  const allLabels = allReels.map(r => fmtDate(parseDate(dateCol(r))));
+  const allViews  = allReels.map(r => col(r,'view','play'));
+  makeLineChart('reelTimelineChart', allLabels, [{
+    label: 'Views', data: allViews,
+    borderColor: C.accent, backgroundColor: 'rgba(187,255,182,0.08)', fill: true, tension: 0.3, pointRadius: 3
+  }]);
+  reelTable(allReels, 'allReelsTable', true);
+
+  // ── REGULAR reels ──
+  document.getElementById('regularReelKpis').innerHTML = reelKpiBlock(regular, 'regular', '');
+  if (regular.length) {
+    makeLineChart('regularReelChart',
+      regular.map(r => fmtDate(parseDate(dateCol(r)))),
+      [{ label: 'Views', data: regular.map(r => col(r,'view','play')),
+         borderColor: C.accent, backgroundColor: 'rgba(187,255,182,0.08)', fill: true, tension: 0.3, pointRadius: 3 }]);
+  }
+  reelTable(regular, 'regularReelsTable', false);
+
+  // ── TRIAL reels ──
+  document.getElementById('trialReelKpis').innerHTML = reelKpiBlock(trial, 'trial', '');
+  if (trial.length) {
+    makeLineChart('trialReelChart',
+      trial.map(r => fmtDate(parseDate(dateCol(r)))),
+      [{ label: 'Views', data: trial.map(r => col(r,'view','play')),
+         borderColor: '#ffd264', backgroundColor: 'rgba(255,210,100,0.08)', fill: true, tension: 0.3, pointRadius: 3 }]);
+  }
+  reelTable(trial, 'trialReelsTable', false);
+}
+
+function showReelSubtab(name) {
+  document.querySelectorAll('.reel-subtab').forEach(b => b.classList.remove('active'));
+  document.getElementById('rst-' + name).classList.add('active');
+  document.querySelectorAll('.reel-view').forEach(v => v.style.display = 'none');
+  document.getElementById('reelView-' + name).style.display = 'block';
 }
 
 // ── STORIES ───────────────────────────────────────────────
